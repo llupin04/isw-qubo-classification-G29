@@ -1,10 +1,10 @@
-group_id: GXX
+group_id: G29
 students:
-  - matricola: "123456"
-  - matricola: "654321"
-main_llm_used: "*****"
-paid_subscription_used: true/false
-second_llm_used: "*****"
+  - matricola: "60/61/66439"
+  - matricola: "60/61/66512"
+main_llm_used: "Gemini"
+paid_subscription_used: true
+second_llm_used: "ChatGPT"
 third_llm_used: ""
 notes: ""
 project_finished: "false"    # Mettere "true" se consegnato
