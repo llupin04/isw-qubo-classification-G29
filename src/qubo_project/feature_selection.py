@@ -26,7 +26,7 @@ def select_features(
     Balances influence on the target (alpha) vs. independence from other features (1-alpha).
     """
     # Load Data
-    df = pd.read_csv("../../outputs/" + normalized_csv)
+    df = pd.read_csv(normalized_csv)
 
     if target_column not in df.columns:
         raise ValueError(f"Target column '{target_column}' not found in the dataset.")
@@ -103,10 +103,10 @@ def select_features(
             high = alpha
 
     # Ensure output directories exist
-    os.makedirs(os.path.dirname("../../outputs" + reducedTrain_csv) or '.', exist_ok=True)
-    os.makedirs(os.path.dirname("../../outputs" + reducedTest_csv) or '.', exist_ok=True)
-    os.makedirs(os.path.dirname("../../outputs" + output_ottim_csv) or '.', exist_ok=True)
-    os.makedirs(os.path.dirname("../../outputs" + output_json) or '.', exist_ok=True)
+    os.makedirs(os.path.dirname(reducedTrain_csv) or '.', exist_ok=True)
+    os.makedirs(os.path.dirname(reducedTest_csv) or '.', exist_ok=True)
+    os.makedirs(os.path.dirname(output_ottim_csv) or '.', exist_ok=True)
+    os.makedirs(os.path.dirname(output_json) or '.', exist_ok=True)
 
     # Save Alpha Attempts Log
     pd.DataFrame(attempts_log).sort_values(by='alpha').to_csv(output_ottim_csv, index=False)
@@ -115,7 +115,13 @@ def select_features(
     selected_feature_names = [features[i] for i in range(m) if best_vector[i] == 1]
     df_reduced = df[selected_feature_names + [target_column]]
 
-    df_train, df_test = train_test_split(df_reduced, test_size=percTest, random_state=seed)
+    # FIX: Clean cut at sample M (no random shuffling)
+    total_samples = len(df_reduced)
+    M = int(total_samples * (1.0 - percTest))
+
+    df_train = df_reduced.iloc[:M]
+    df_test = df_reduced.iloc[M:]
+
 
     df_train.to_csv(reducedTrain_csv, index=False)
     df_test.to_csv(reducedTest_csv, index=False)
@@ -171,10 +177,10 @@ def main():
     try:
         report = select_features(
             normalized_csv=args.in_normalized,
-            reducedTrain_csv="../../outputs/" + args.out_train,
-            reducedTest_csv="../../outputs/" + args.out_test,
-            output_ottim_csv="../../outputs/" + args.out_optimizations,
-            output_json="../../outputs/" + args.out_json,
+            reducedTrain_csv=args.out_train,
+            reducedTest_csv=args.out_test,
+            output_ottim_csv=args.out_optimizations,
+            output_json=args.out_json,
             target_column=args.target,
             percTest=args.perc_test,
             percSelected=args.perc_selected,
@@ -194,3 +200,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+"""
+python src/qubo_project/feature_selection.py --in-normalized outputs/normalized.csv --out-train outputs/training_reduced.csv --out-test outputs/test_reduced.csv --out-optimizations outputs/optimizations.csv --out-json outputs/feature_selection_result.json --target target --perc-selected 0.20 --allowance 1 --perc-test 0.30 --seed 42 --alpha-computations 10
+"""

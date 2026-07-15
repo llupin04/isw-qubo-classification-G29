@@ -44,7 +44,20 @@ def fit_normalize(
     kept_features = valid_percentages[valid_percentages >= minPercValid].index.tolist()
     dropped_features = valid_percentages[valid_percentages < minPercValid].index.tolist()
 
-    X_filtered = X[kept_features]
+    X_filtered = X[kept_features].copy()
+
+    # Fill NaNs with the mean of their respective columns
+    X_filtered = X_filtered.fillna(X_filtered.mean())
+
+    # Identify and drop zero-variance (constant) columns
+    stds = X_filtered.std()
+    zero_variance_cols = stds[stds == 0].index.tolist()
+
+    if zero_variance_cols:
+        X_filtered = X_filtered.drop(columns=zero_variance_cols)
+        # Update our tracking lists for the JSON report
+        kept_features = [f for f in kept_features if f not in zero_variance_cols]
+        dropped_features.extend(zero_variance_cols)
 
     # Normalize Remaining Feature Columns
     scaler = StandardScaler()
@@ -65,13 +78,13 @@ def fit_normalize(
 
     # Generate and Save JSON Report
     report = {
-        "dataset_rows": total_rows,
-        "num_input_features": num_input_features,
-        "num_kept_features": len(kept_features),
-        "num_dropped_features": len(dropped_features),
-        "load_time_seconds": round(load_time, 4),
-        "process_time_seconds": round(process_time, 4),
-        "dropped_features": dropped_features
+        "n_input_features": num_input_features,
+        "n_kept_features": len(kept_features),
+        "dataset_size": total_rows,
+        "dataset_input_time": round(load_time, 4),
+        "dataset_preprocessing_time": round(process_time, 4),
+        "dropped_feature_names": dropped_features,
+        "num_dropped_features": len(dropped_features)
     }
 
     with open(outInitalRes_json, "w") as f:
@@ -95,10 +108,10 @@ def main():
 
     try:
         report = fit_normalize(
-            input_csv= "../../data/" + args.input,
+            input_csv=args.input,
             target_column=args.target,
-            normalized_csv= "../../outputs/" + args.out_data,
-            outInitalRes_json= "../../outputs/" + args.out_json,
+            normalized_csv=args.out_data,
+            outInitalRes_json=args.out_json,
             minPercValid=args.min_perc_valid
         )
 
@@ -115,5 +128,5 @@ if __name__ == "__main__":
 
 """
 >> cd ./scr/qubo_project
->> python preprocessing.py --input input_dataset.csv --target target --out-data normalized.csv --out-json preprocessing_result.json --min-perc-valid 0.06                                                   
+python src/qubo_project/preprocessing.py --input data/input_dataset.csv --target target --out-data outputs/normalized.csv --out-json outputs/preprocessing_result.json --min-perc-valid 0.06                                                   
 """

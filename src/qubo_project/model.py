@@ -6,8 +6,17 @@ import pandas as pd
 import joblib
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score,
+    precision_recall_fscore_support,
+    roc_auc_score,
+    confusion_matrix
+)
 
 
+# =====================================================================
+# Phase 3: Classifier Training
+# =====================================================================
 def train(
         classifier: str,
         reducedTrain_csv: str,
@@ -23,7 +32,7 @@ def train(
     t_load_start = time.time()
 
     # Load Dataset
-    df = pd.read_csv("../../outputs/" + reducedTrain_csv)
+    df = pd.read_csv(reducedTrain_csv)
     dataset_input_time = time.time() - t_load_start
 
     if target_column not in df.columns:
@@ -64,7 +73,7 @@ def train(
     os.makedirs(os.path.dirname(metrics_json) or '.', exist_ok=True)
 
     # Save the Trained Model
-    joblib.dump(model, "../../outputs/" + model_path)
+    joblib.dump(model, model_path)
 
     # Generate and Save JSON Report
     report = {
@@ -80,53 +89,171 @@ def train(
         "training_time": round(float(training_time), 2)
     }
 
-    with open("../../outputs/" + metrics_json, "w") as f:
+    with open(metrics_json, "w") as f:
         json.dump(report, f, indent=4)
 
     return report
 
 
-def main():
-    # Main parser
-    parser = argparse.ArgumentParser(description="Model training and inference manager.")
+# =====================================================================
+# Phase 4: Test Set Prediction & Evaluation
+# =====================================================================
+def predict(
+        reduced_Test_csv: str,
+        target_column: str,
+        model_path: str,
+        predictions_csv: str,
+        classif_stats_json: str,
+):
+    """
+    Reads a test dataset, loads a trained classifier, performs inference,
+    and calculates classification performance metrics.
+    """
+    # 1 & 2. Load the Model and Test Data
+    model = joblib.load(model_path)
+    df = pd.read_csv(reduced_Test_csv)
 
-    # Subparsers for commands like 'train', 'predict', etc.
+    if target_column not in df.columns:
+        raise ValueError(f"Target column '{target_column}' not found in the test dataset.")
+
+    y_true = df[target_column]
+    X_test = df.drop(columns=[target_column])
+
+    # 3. Generate Predictions
+    y_pred = model.predict(X_test)
+
+    # Get probabilities for the positive class (class 1)
+    if hasattr(model, "predict_proba"):
+        y_prob = model.predict_proba(X_test)[:, 1]
+    else:
+        # Fallback if a model doesn't support predict_proba
+        y_prob = y_pred.astype(float)
+
+    # 4. Save Per-Record Predictions CSV
+    predictions_df = pd.DataFrame({
+        "row_n": df.index,
+        "target": y_true,
+        "prediction": y_pred,
+        "score": y_prob
+    })
+
+    os.makedirs(os.path.dirname(predictions_csv) or '.', exist_ok=True)
+    predictions_df.to_csv(predictions_csv, index=False)
+
+    # 5. Compute Classification Metrics
+    n_samples = len(y_true)
+    target_1_count = int(y_true.sum())
+    target_1_percentage = (target_1_count / n_samples) * 100.0
+
+    acc = accuracy_score(y_true, y_pred)
+    precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, labels=[0, 1], zero_division=0)
+
+    try:
+        roc_auc = roc_auc_score(y_true, y_prob)
+    except ValueError:
+        roc_auc = 0.0  # Handle edge case where only one class is present in y_true
+
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
+
+    # Extract model name for the report
+    clf_name = type(model).__name__
+
+    # Generate JSON Report
+    stats_report = {
+        "classifier": clf_name,
+        "n_samples": n_samples,
+        "target_1_count": target_1_count,
+        "target_1_percentage": round(float(target_1_percentage), 2),
+        "accuracy": float(acc),
+        "class_0": {
+            "precision": float(precision[0]),
+            "recall": float(recall[0]),
+            "f1": float(f1[0]),
+            "support": int(support[0])
+        },
+        "class_1": {
+            "precision": float(precision[1]),
+            "recall": float(recall[1]),
+            "f1": float(f1[1]),
+            "support": int(support[1])
+        },
+        "roc_auc": float(roc_auc),
+        "confusion_matrix": {
+            "labels": [0, 1],
+            "matrix": cm.tolist()
+        }
+    }
+
+    os.makedirs(os.path.dirname(classif_stats_json) or '.', exist_ok=True)
+    with open(classif_stats_json, "w") as f:
+        json.dump(stats_report, f, indent=4)
+
+    return stats_report
+
+
+# =====================================================================
+# Command Line Interface
+# =====================================================================
+def main():
+    parser = argparse.ArgumentParser(description="Model training and inference manager.")
     subparsers = parser.add_subparsers(dest="command", required=True, help="Available sub-commands")
 
-    # 'train' command parser
+    # Subparser for 'train'
     train_parser = subparsers.add_parser("train", help="Train a classification model")
     train_parser.add_argument("--classifier", required=True, help="Classifier to use (e.g., random_forest).")
     train_parser.add_argument("--in-reduced", required=True, help="Path to the reduced training CSV dataset.")
     train_parser.add_argument("--target", required=True, help="Name of the target column.")
     train_parser.add_argument("--out-model", required=True, help="Path for the output trained model (.joblib).")
     train_parser.add_argument("--out-metrics", required=True, help="Path for the output metrics JSON file.")
-    train_parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility (default: 42).")
+    train_parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility.")
+
+    # Subparser for 'predict'
+    predict_parser = subparsers.add_parser("predict", help="Run inference and evaluate a trained model")
+    predict_parser.add_argument("--input-testset", required=True, help="Path to the reduced test CSV dataset.")
+    predict_parser.add_argument("--target", required=True, help="Name of the target column.")
+    predict_parser.add_argument("--model", required=True, help="Path to the trained model (.joblib) to load.")
+    predict_parser.add_argument("--out-predictions", required=True, help="Path for the output predictions CSV file.")
+    predict_parser.add_argument("--out-stats", required=True,
+                                help="Path for the output classification stats JSON file.")
 
     args = parser.parse_args()
 
     if args.command == "train":
+        report = train(
+            classifier=args.classifier,
+            reducedTrain_csv=args.in_reduced,
+            target_column=args.target,
+            model_path=args.out_model,
+            metrics_json=args.out_metrics,
+            seed=args.seed
+        )
+        print(f"outputs/{args.out_model}")
+        print(f"outputs/{args.out_metrics}")
+
+    elif args.command == "predict":
 
         try:
-            report = train(
-                classifier=args.classifier,
-                reducedTrain_csv=  args.in_reduced,
+            stats = predict(
+                reduced_Test_csv=args.input_testset,
                 target_column=args.target,
-                model_path=  args.out_model,
-                metrics_json=  args.out_metrics,
-                seed=args.seed
+                model_path=args.model,
+                predictions_csv=args.out_predictions,
+                classif_stats_json=args.out_stats
             )
-
-            print(f"outputs/{args.out_model}")
-            print(f"outputs/{args.out_metrics}")
+            print(f"outputs/{args.out_predictions}")
+            print(f"outputs/{args.out_stats}")
 
         except Exception as e:
-            print(f"[-] An error occurred during training: {e}")
+            print(f"[-] An error occurred during prediction: {e}")
 
 
 if __name__ == "__main__":
     main()
 
 
+
 """
-python model.py train --classifier random_forest --in-reduced training_reduced.csv --target target --out-model model.joblib --out-metrics training_metrics.json --seed 42
+python src/qubo_project/model.py train --classifier random_forest --in-reduced outputs/training_reduced.csv --target target --out-model outputs/model.joblib --out-metrics outputs/training_metrics.json --seed 42
+
+python src/qubo_project/model.py predict --input-testset outputs/test_reduced.csv --target target --model outputs/model.joblib --out-predictions outputs/predictions.csv --out-stats outputs/classification_stats.json
 """
