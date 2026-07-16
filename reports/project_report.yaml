@@ -1,0 +1,191 @@
+# ============================================================
+# Template report progetto
+# Classificazione binaria con feature reduction QUBO
+# Formato: YAML
+#
+# Compilare tutti i campi applicabili.
+# Usare null quando un dato non è disponibile.
+# Non inserire qui prompt completi o risposte degli LLM:
+# saranno raccolti in un template separato.
+# Utilizzare l'inglese per le risposte testuali
+# ============================================================
+
+schema_version: "1.0"
+
+group_id: "G29"
+repository_url: "https://github.com/llupin04/isw-qubo-classification-G29"
+submission_date: "2026-07-DD"
+
+students:
+  - student_id: "60/61/66439"        #Matricola completa
+    role_in_project:
+      - "preprocessing"
+      - "feature_selection"
+      - "classification"
+      - "testing"
+      - "documentation"
+      - "gui"
+  - student_id: "60/61/66512"        #Matricola completa
+    role_in_project:
+      - "preprocessing"
+      - "feature_selection"
+      - "classification"
+      - "testing"
+      - "documentation"
+      - "gui"
+
+team_work:
+  work_distribution:
+    design_percent: 10
+    preprocessing_percent: 10
+    qubo_feature_selection_percent: 10
+    classification_percent: 10
+    testing_percent: 30
+    gui_percent: 10
+    documentation_percent: 20
+  collaboration_mode:
+    # valori suggeriti: "pair_programming", "divisione_per_moduli", "mista"
+    type: "mista"
+    notes: null
+    remote_collaboration_perc: 100   # Percentuale di lavoro in call (0-100)
+  estimated_total_hours:
+    student_1_hours: 16
+    student_2_hours: 16
+    total_group_hours: 16
+
+initial_context:
+  prior_experience:
+    # valori da usare: "none", "basic", "intermediate", "advanced"
+    python: "basic"
+    pandas_numpy: "basic"
+    scikit_learn: "none"
+    machine_learning: "none"
+    classification: "none"
+    feature_selection: "none"
+    optimization: "none"
+    QUBO: "none"
+    git_github: "basic"
+  initial_confidence:
+    # scala 1-5: 1 = per nulla sicuri, 5 = molto sicuri
+    python_project_development: 3
+    qubo_formulation: 1
+    machine_learning: 1
+    debugging: 2
+    validating_llm_outputs: 5
+
+design_choices:
+  correlation_computation: "Spearman correlation"
+  QUBO_optimization_algorithm:
+    algorithm_name: "Simulated Annealing"
+    library_used: "dwave-neal"
+    reason_for_choice: "Chosen on the indication of the LLM"
+  classification_algorithm:
+    algorithm_name: "Random Forest"
+    library_used: "scikit-learn"
+    reason_for_choice: "Already used in one of the libraries used during lessons"
+  gui_development: "streamlit"
+  problems_encountered:
+    - problem: null
+      solution: null
+  notes:
+
+llm_usage_summary:
+  # Non inserire prompt o risposte complete: saranno raccolti separatamente.
+  llms_used:    # Inserire un record per ogni LLM usato
+    - name: "Gemini"
+      version: "Gemini 3.1 Pro"
+      paid_subscription: true
+      usage_level_0_to_3:   # valori da 0 (non usato) a 3 (usatissimo)     
+        value: 3
+  phases_where_llm_was_used:
+    requirements_understanding:
+      usage_level_0_to_3: 1
+      usefulness_1_to_5: 3
+      notes: null
+    preprocessing:
+      usage_level_0_to_3: 3
+      usefulness_1_to_5: 5
+      notes: null
+    qubo_formulation:
+      usage_level_0_to_3: 3
+      usefulness_1_to_5: 5
+      notes: null
+    optimizer_selection:
+      usage_level_0_to_3: 3
+      usefulness_1_to_5: 5
+      notes: null
+    classifier_selection:
+      usage_level_0_to_3: 3
+      usefulness_1_to_5: 5
+      notes: null
+    debugging:
+      usage_level_0_to_3: 3
+      usefulness_1_to_5: 5
+      notes: null
+    testing:
+      usage_level_0_to_3: 3
+      usefulness_1_to_5: 5
+      notes: null
+    documentation:
+      usage_level_0_to_3: 0
+      usefulness_1_to_5: null
+      notes: null
+    gui:
+      usage_level_0_to_3: 2
+      usefulness_1_to_5: 5
+      notes: null
+  estimated_llm_contribution:
+    percent_code_generated_or_suggested_by_llm: 80
+    percent_code_accepted_without_major_changes: 70
+    percent_documentation_generated_or_suggested_by_llm: 0
+  human_verification:
+    # descrivere come il gruppo ha controllato gli output dell'LLM. (yes/partially/no)
+    methods_used:
+      - code_execution: "yes"
+      - automated_tests: "yes"
+      - critical_reading: "yes"
+      - comparison_with_other_llm: "no"
+    notes: null
+  llm_misleading_outputs:
+    encountered: "partially"  # (yes/partially/no)
+    examples_count: 3   # number of cases
+    categories:     # rispondere con: yes/partially/no
+      wrong_python_code: "partially"
+      wrong_library_usage: "no"
+      wrong_qubo_formulation: "no"
+      wrong_ml_methodology: "no"
+      hallucinated_api_or_function: "partially"
+      other: null      # indicare quale/quali
+    impact_on_project: 1   # valori da 0 (nessuno) a 3 (fortissimo)
+  llm_overall_assessment:  
+    productivity_improvement_1_to_5: 5
+    learning_support_1_to_5: 2
+    risk_of_overreliance_1_to_5: 3
+    trust_in_llm_outputs_1_to_5: 2
+    would_use_again: "yes"   # (yes/maybe/no)
+    notes: null
+  most_useful_project_activity: "GUI and Automated Tests"
+  most_difficult_project_activity: "Automated Tests and QUBO Function"
+  main_lessons_learned:   # descrivere con una frase per ogni lezione appresa
+    - "Don't rely too much only on the LLM outputs"
+  main_problems:
+    - problem: "Understanding the QUBO formulas"
+      severity_1_to_5: 5
+      how_resolved: "Cross-referencing the formulas with simplified explanations generated by the LLM"
+
+final_results:   # descrivere con una frase per ogni elemento che ritenete di citare
+  what_worked_well:
+    - "GUI"
+    - "Preprocessing"
+    - "Feature selection"
+  what_did_not_work_well:
+    - "Automated tests"
+  main_benefit_of_using_llm: "Fast development"
+  main_problem_of_using_llm: "Review the generated code"
+  surprising_findings:
+    - "Streamlit GUI was very neat and clean"
+  limitations_of_the_solution:
+    - "QUBO optimization used"
+  threats_to_validity_from_team_perspective:
+    - "Some errors in the normalization phase during automated tests"
+
