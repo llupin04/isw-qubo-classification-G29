@@ -82,7 +82,7 @@ def fit_normalize(
         "n_kept_features": len(kept_features),
         "dataset_size": total_rows,
         "dataset_input_time": round(load_time, 4),
-        "dataset_preprocessing_time": round(process_time, 4),
+        "dataset_processing_time": round(process_time, 4),
         "dropped_feature_names": dropped_features,
         "num_dropped_features": len(dropped_features)
     }
