@@ -4,4 +4,6 @@ numpy
 pandas
 pytest
 scikit-learn
+dwave-neal
 joblib
+streamlit
